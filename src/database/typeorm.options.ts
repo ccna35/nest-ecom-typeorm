@@ -14,8 +14,8 @@ export const typeOrmOptions: TypeOrmModuleAsyncOptions = {
       type: 'postgres',
       url: config.get<string>('DATABASE_URL'),
       entities: [User, Category, Product],
-      synchronize: config.get<string>('TYPEORM_SYNC', 'true') === 'true',
-      logging: config.get<string>('TYPEORM_LOGGING', 'false') === 'true',
+      synchronize: config.get<string>('NODE_ENV') !== 'production',
+      logging: config.get<string>('NODE_ENV') === 'development',
       ssl: sslEnabled ? { rejectUnauthorized: false } : undefined,
       migrationsRun: config.get<string>('NODE_ENV') === 'production',
     };
