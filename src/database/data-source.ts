@@ -4,17 +4,28 @@ import { User } from '../modules/users/user.entity';
 import { Category } from '../modules/categories/category.entity';
 import { Product } from '../modules/products/product.entity';
 
-// NOTE: TypeORM CLI reads env vars from process.env.
-// Run with: `cp .env.example .env` then `npm run migration:generate`.
-
 export default new DataSource({
   type: 'postgres',
-  // host: process.env.DB_HOST ?? 'localhost',
-  // port: Number(process.env.DB_PORT ?? '5432'),
-  // username: process.env.DB_USER ?? 'postgres',
-  // password: process.env.DB_PASSWORD ?? 'postgres',
-  // database: process.env.DB_NAME ?? 'ecom',
+
+  // ── Single source of truth ──
+  url: process.env.DATABASE_URL,  // Railway injects this; local .env provides it too
+
+  // Optional: fallback only for safety (but better to require it in prod)
+  // if (!process.env.DATABASE_URL) {
+  //   throw new Error('DATABASE_URL is required in environment');
+  // }
+
   entities: [User, Category, Product],
+
+  // Migrations point to compiled files (after build)
   migrations: ['dist/database/migrations/*.js'],
-  synchronize: false,
+
+  synchronize: false,  // NEVER true in prod
+
+  // Railway-specific (self-signed certs)
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: false }
+    : false,
+
+  logging: process.env.NODE_ENV === 'development' ? 'all' : ['error'],
 });
