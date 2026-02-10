@@ -12,6 +12,7 @@ export const typeOrmOptions: TypeOrmModuleAsyncOptions = {
 
     return {
       type: 'postgres',
+      url: config.get<string>('DATABASE_URL'),
       host: config.get<string>('DB_HOST', 'localhost'),
       port: Number(config.get<string>('DB_PORT', '5432')),
       username: config.get<string>('DB_USER', 'postgres'),
