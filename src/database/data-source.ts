@@ -12,7 +12,6 @@ const fallbackUrl = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL || fallbackUrl,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: false,
