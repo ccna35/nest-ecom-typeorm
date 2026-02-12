@@ -13,11 +13,13 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts src/database/migrations/Init",
-    "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
-    "migration:run:prod": "npm run typeorm -- migration:run -d dist/database/data-source.js",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts"
+    "typeorm": "node -r tsconfig-paths/register ./node_modules/typeorm/cli-ts-node-commonjs.js -d src/database/data-source.ts",
+    "migration:generate": "npm run typeorm -- migration:generate src/migrations/Auto",
+    "migration:run:local": "npm run typeorm -- migration:run",
+    "migration:revert:local": "npm run typeorm -- migration:revert",
+    "typeorm:prod": "node ./node_modules/typeorm/cli.js -d dist/database/data-source.prod.js",
+    "migration:run": "npm run typeorm:prod -- migration:run",
+    "migration:revert": "npm run typeorm:prod -- migration:revert"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -58,6 +60,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "typeorm-ts-node-commonjs": "^0.3.20",
     "typescript": "^5.4.2"
   }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import slugify from 'slugify';
@@ -49,7 +53,9 @@ export class CategoriesService {
 
     if (dto.name && dto.name !== category.name) {
       const slug = this.makeSlug(dto.name);
-      const existing = await this.categoriesRepo.findOne({ where: [{ name: dto.name }, { slug }] });
+      const existing = await this.categoriesRepo.findOne({
+        where: [{ name: dto.name }, { slug }],
+      });
       if (existing) throw new BadRequestException('Category already exists');
       category.name = dto.name;
       category.slug = slug;

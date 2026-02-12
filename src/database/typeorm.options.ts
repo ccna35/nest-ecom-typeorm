@@ -21,7 +21,7 @@ export const typeOrmOptions: TypeOrmModuleAsyncOptions = {
     return {
       type: 'postgres',
       url: databaseUrl,
-      entities: [User, Category, Product],
+      entities: dataSource.options.entities,
       migrations: dataSource.options.migrations,
       synchronize: config.get<string>('NODE_ENV') !== 'production',
       logging: config.get<string>('NODE_ENV') === 'development',

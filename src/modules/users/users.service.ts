@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,7 +17,9 @@ export class UsersService {
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {
-    const existing = await this.usersRepo.findOne({ where: { email: dto.email } });
+    const existing = await this.usersRepo.findOne({
+      where: { email: dto.email },
+    });
     if (existing) throw new BadRequestException('Email already exists');
 
     // TODO: hash password properly (bcrypt/argon2). This is only a scaffold.
@@ -41,7 +47,9 @@ export class UsersService {
     const user = await this.findOne(id);
 
     if (dto.email && dto.email !== user.email) {
-      const existing = await this.usersRepo.findOne({ where: { email: dto.email } });
+      const existing = await this.usersRepo.findOne({
+        where: { email: dto.email },
+      });
       if (existing) throw new BadRequestException('Email already exists');
     }
 

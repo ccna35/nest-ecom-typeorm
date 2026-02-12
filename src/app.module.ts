@@ -15,7 +15,6 @@ import { ProductsModule } from './modules/products/products.module';
     ProductsModule,
   ],
 })
-
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -29,9 +28,10 @@ import { ProductsModule } from './modules/products/products.module';
       // IMPORTANT for prod:
       autoLoadEntities: true,
       synchronize: false, // recommended: use migrations instead
-      ssl: (process.env.DB_SSL ?? 'true') === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl:
+        (process.env.DB_SSL ?? 'true') === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     UsersModule,
@@ -39,4 +39,4 @@ import { ProductsModule } from './modules/products/products.module';
     ProductsModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../categories/category.entity';
@@ -16,10 +20,14 @@ export class ProductsService {
   ) {}
 
   async create(dto: CreateProductDto): Promise<Product> {
-    const existingSku = await this.productsRepo.findOne({ where: { sku: dto.sku } });
+    const existingSku = await this.productsRepo.findOne({
+      where: { sku: dto.sku },
+    });
     if (existingSku) throw new BadRequestException('SKU already exists');
 
-    const category = await this.categoriesRepo.findOne({ where: { id: dto.categoryId } });
+    const category = await this.categoriesRepo.findOne({
+      where: { id: dto.categoryId },
+    });
     if (!category) throw new BadRequestException('Invalid categoryId');
 
     const product = this.productsRepo.create({
@@ -56,12 +64,16 @@ export class ProductsService {
     const product = await this.findOne(id);
 
     if (dto.sku && dto.sku !== product.sku) {
-      const existingSku = await this.productsRepo.findOne({ where: { sku: dto.sku } });
+      const existingSku = await this.productsRepo.findOne({
+        where: { sku: dto.sku },
+      });
       if (existingSku) throw new BadRequestException('SKU already exists');
     }
 
     if (dto.categoryId && dto.categoryId !== product.categoryId) {
-      const category = await this.categoriesRepo.findOne({ where: { id: dto.categoryId } });
+      const category = await this.categoriesRepo.findOne({
+        where: { id: dto.categoryId },
+      });
       if (!category) throw new BadRequestException('Invalid categoryId');
       product.category = category;
       product.categoryId = category.id;

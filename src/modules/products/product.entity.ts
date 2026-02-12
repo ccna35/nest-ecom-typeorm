@@ -35,7 +35,10 @@ export class Product {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  @ManyToOne(() => Category, (c) => c.products, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Category, (c) => c.products, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'categoryId' })
   category!: Category;
 
