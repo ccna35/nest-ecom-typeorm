@@ -5,9 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './user.entity';
+import { User, UserRole } from './user.entity';
 
 @Injectable()
 export class UsersService {
@@ -22,12 +23,12 @@ export class UsersService {
     });
     if (existing) throw new BadRequestException('Email already exists');
 
-    // TODO: hash password properly (bcrypt/argon2). This is only a scaffold.
+    const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = this.usersRepo.create({
       email: dto.email,
       name: dto.name,
-      passwordHash: `plain:${dto.password}`,
-      role: dto.role,
+      passwordHash,
+      role: dto.role ?? UserRole.CUSTOMER,
     });
 
     return this.usersRepo.save(user);
@@ -54,8 +55,7 @@ export class UsersService {
     }
 
     if (dto.password) {
-      // TODO: hash password properly.
-      (dto as any).passwordHash = `plain:${dto.password}`;
+      (dto as any).passwordHash = await bcrypt.hash(dto.password, 10);
       delete (dto as any).password;
     }
 
@@ -66,5 +66,9 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
     await this.usersRepo.remove(user);
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.usersRepo.findOne({ where: { email } });
   }
 }
