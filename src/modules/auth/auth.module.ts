@@ -11,20 +11,20 @@ import { LocalStrategy } from './local.strategy';
 import { RefreshToken } from './refresh-token.entity';
 
 @Module({
-  imports: [
-    UsersModule,
-    PassportModule,
-    TypeOrmModule.forFeature([RefreshToken]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_ACCESS_SECRET') ?? 'access-secret',
-        signOptions: { expiresIn: '5m' },
-      }),
-    }),
-  ],
-  controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+    imports: [
+        UsersModule,
+        PassportModule,
+        TypeOrmModule.forFeature([RefreshToken]),
+        JwtModule.registerAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                secret: config.get<string>('JWT_ACCESS_SECRET') ?? 'access-secret',
+                signOptions: { expiresIn: '5m' },
+            }),
+        }),
+    ],
+    controllers: [AuthController],
+    providers: [AuthService, LocalStrategy, JwtStrategy],
 })
-export class AuthModule {}
+export class AuthModule { }
