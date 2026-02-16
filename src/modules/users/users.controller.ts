@@ -6,14 +6,19 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRole } from './user.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('users')
+@UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   create(@Body() dto: CreateUserDto) {
@@ -21,6 +26,7 @@ export class UsersController {
   }
 
   @Get()
+  @Roles(UserRole.ADMIN)
   findAll() {
     return this.usersService.findAll();
   }
@@ -36,6 +42,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

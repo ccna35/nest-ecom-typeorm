@@ -3,13 +3,16 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Product } from '../products/product.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
   CUSTOMER = 'customer',
+  SELLER = 'seller',
 }
 
 @Entity('users')
@@ -42,4 +45,7 @@ export class User {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   avatarUrl?: string;
+
+  @OneToMany(() => Product, (product) => product.createdBy)
+  productsCreated?: Product[];
 }

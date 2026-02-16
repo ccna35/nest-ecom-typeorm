@@ -9,6 +9,12 @@ import { Category } from '../categories/category.entity';
 import { Product } from './product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UserRole } from '../users/user.entity';
+
+type AuthUser = {
+  userId: string;
+  role: UserRole;
+};
 
 @Injectable()
 export class ProductsService {
@@ -17,9 +23,9 @@ export class ProductsService {
     private readonly productsRepo: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoriesRepo: Repository<Category>,
-  ) {}
+  ) { }
 
-  async create(dto: CreateProductDto): Promise<Product> {
+  async create(dto: CreateProductDto, user: AuthUser): Promise<Product> {
     const existingSku = await this.productsRepo.findOne({
       where: { sku: dto.sku },
     });
@@ -39,6 +45,7 @@ export class ProductsService {
       isActive: dto.isActive ?? true,
       category,
       categoryId: category.id,
+      createdById: user.userId,
     });
 
     return this.productsRepo.save(product);
@@ -60,8 +67,13 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, dto: UpdateProductDto): Promise<Product> {
+  async update(id: string, dto: UpdateProductDto, user: AuthUser): Promise<Product> {
     const product = await this.findOne(id);
+
+    // check if user is seller and owns the product
+    if (user.role === UserRole.SELLER && product.createdById !== user.userId) {
+      throw new BadRequestException('You can only update your own products');
+    }
 
     if (dto.sku && dto.sku !== product.sku) {
       const existingSku = await this.productsRepo.findOne({
@@ -87,8 +99,11 @@ export class ProductsService {
     return this.productsRepo.save(product);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user: AuthUser): Promise<void> {
     const product = await this.findOne(id);
+    if (user.role === UserRole.SELLER && product.createdById !== user.userId) {
+      throw new BadRequestException('You can only delete your own products');
+    }
     await this.productsRepo.remove(product);
   }
 }

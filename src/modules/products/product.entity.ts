@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Category } from '../categories/category.entity';
+import { User } from '../users/user.entity';
 
 @Entity('products')
 export class Product {
@@ -44,6 +45,13 @@ export class Product {
 
   @Column({ type: 'uuid' })
   categoryId!: string;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'createdById' })
+  createdBy?: User | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  createdById?: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

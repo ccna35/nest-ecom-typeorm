@@ -24,7 +24,7 @@ export const typeOrmOptions: TypeOrmModuleAsyncOptions = {
       entities: dataSource.options.entities,
       migrations: dataSource.options.migrations,
       synchronize: config.get<string>('NODE_ENV') !== 'production',
-      logging: config.get<string>('NODE_ENV') === 'development',
+      // logging: config.get<string>('NODE_ENV') === 'development',
       ssl: sslEnabled ? { rejectUnauthorized: false } : false,
     };
   },
