@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
@@ -21,14 +11,11 @@ import { AuthenticatedRequest } from '../auth/authenticatedRequest.type';
 @Controller('products')
 @UseGuards(RolesGuard)
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) { }
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SELLER)
-  create(
-    @Body() dto: CreateProductDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  create(@Body() dto: CreateProductDto, @Req() req: AuthenticatedRequest) {
     return this.productsService.create(dto, req.user);
   }
 
@@ -46,20 +33,13 @@ export class ProductsController {
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.SELLER)
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateProductDto,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: AuthenticatedRequest) {
     return this.productsService.update(id, dto, req.user);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SELLER)
-  remove(
-    @Param('id') id: string,
-    @Req() req: AuthenticatedRequest,
-  ) {
+  remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.productsService.remove(id, req.user);
   }
 }

@@ -22,9 +22,7 @@ export class AddRefreshTokens1779999999999 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "refresh_tokens" DROP CONSTRAINT "FK_refresh_tokens_user"`,
     );
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_refresh_tokens_tokenHash"`,
-    );
+    await queryRunner.query(`DROP INDEX "public"."IDX_refresh_tokens_tokenHash"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_refresh_tokens_userId"`);
     await queryRunner.query(`DROP TABLE "refresh_tokens"`);
   }

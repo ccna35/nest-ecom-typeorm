@@ -34,9 +34,7 @@ export class AuthService {
     private readonly refreshTokensRepo: Repository<RefreshToken>,
   ) {}
 
-  async signup(
-    dto: SignupDto,
-  ): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
+  async signup(dto: SignupDto): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
     const user = await this.usersService.create({
       email: dto.email,
       name: dto.name,
@@ -58,9 +56,7 @@ export class AuthService {
     return user;
   }
 
-  async login(
-    user: User,
-  ): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
+  async login(user: User): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
     const tokens = await this.issueTokens(user);
     return { user: this.toSafeUser(user), tokens };
   }
@@ -69,10 +65,7 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
     const payload = await this.verifyRefreshToken(refreshToken);
-    const activeToken = await this.findActiveRefreshToken(
-      payload.userId,
-      refreshToken,
-    );
+    const activeToken = await this.findActiveRefreshToken(payload.userId, refreshToken);
 
     if (!activeToken) {
       throw new UnauthorizedException('Refresh token not recognized');
@@ -92,10 +85,7 @@ export class AuthService {
 
     try {
       const payload = await this.verifyRefreshToken(refreshToken);
-      const activeToken = await this.findActiveRefreshToken(
-        payload.userId,
-        refreshToken,
-      );
+      const activeToken = await this.findActiveRefreshToken(payload.userId, refreshToken);
       if (activeToken) {
         activeToken.revokedAt = new Date();
         await this.refreshTokensRepo.save(activeToken);
@@ -151,14 +141,8 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async storeRefreshToken(
-    userId: string,
-    refreshToken: string,
-  ): Promise<void> {
-    const tokenHash = await bcrypt.hash(
-      refreshToken,
-      this.refreshTokenSaltRounds,
-    );
+  private async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
+    const tokenHash = await bcrypt.hash(refreshToken, this.refreshTokenSaltRounds);
     const expiresAt = new Date(Date.now() + this.refreshTtlMs);
 
     const record = this.refreshTokensRepo.create({

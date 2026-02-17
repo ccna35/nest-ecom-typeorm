@@ -4,9 +4,7 @@ export class Auto1770887920606 implements MigrationInterface {
   name = 'Auto1770887920606';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `CREATE TYPE "public"."users_role_enum" AS ENUM('admin', 'customer')`,
-    );
+    await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('admin', 'customer')`);
     await queryRunner.query(
       `CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" character varying(320) NOT NULL, "name" character varying(120) NOT NULL, "passwordHash" character varying(255) NOT NULL, "role" "public"."users_role_enum" NOT NULL DEFAULT 'customer', "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), "avatarUrl" character varying(255), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
     );
@@ -37,20 +35,12 @@ export class Auto1770887920606 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "products" DROP CONSTRAINT "FK_ff56834e735fa78a15d0cf21926"`,
     );
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_c44ac33a05b144dd0d9ddcf932"`,
-    );
+    await queryRunner.query(`DROP INDEX "public"."IDX_c44ac33a05b144dd0d9ddcf932"`);
     await queryRunner.query(`DROP TABLE "products"`);
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_420d9f679d41281f282f5bc7d0"`,
-    );
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_8b0be371d28245da6e4f4b6187"`,
-    );
+    await queryRunner.query(`DROP INDEX "public"."IDX_420d9f679d41281f282f5bc7d0"`);
+    await queryRunner.query(`DROP INDEX "public"."IDX_8b0be371d28245da6e4f4b6187"`);
     await queryRunner.query(`DROP TABLE "categories"`);
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_97672ac88f789774dd47f7c8be"`,
-    );
+    await queryRunner.query(`DROP INDEX "public"."IDX_97672ac88f789774dd47f7c8be"`);
     await queryRunner.query(`DROP TABLE "users"`);
     await queryRunner.query(`DROP TYPE "public"."users_role_enum"`);
   }

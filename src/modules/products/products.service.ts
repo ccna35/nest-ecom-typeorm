@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../categories/category.entity';
@@ -23,7 +19,7 @@ export class ProductsService {
     private readonly productsRepo: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoriesRepo: Repository<Category>,
-  ) { }
+  ) {}
 
   async create(dto: CreateProductDto, user: AuthUser): Promise<Product> {
     const existingSku = await this.productsRepo.findOne({

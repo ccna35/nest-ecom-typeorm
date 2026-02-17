@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Post,
-  Req,
-  Res,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -17,14 +9,11 @@ import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('signup')
-  async signup(
-    @Body() dto: SignupDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async signup(@Body() dto: SignupDto, @Res({ passthrough: true }) response: Response) {
     const { user, tokens } = await this.authService.signup(dto);
     this.authService.setAuthCookies(response, tokens);
     return { user };
@@ -45,10 +34,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  async refresh(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const refreshToken = request.cookies?.refresh_token;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token missing');
@@ -60,10 +46,7 @@ export class AuthController {
 
   @Public()
   @Post('logout')
-  async logout(
-    @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
+  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const refreshToken = request.cookies?.refresh_token;
     await this.authService.logout(refreshToken);
     this.authService.clearAuthCookies(response);
