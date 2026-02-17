@@ -4,10 +4,12 @@ import {
   Entity,
   Index,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Product } from '../products/product.entity';
+import { SellerProfile } from '../seller-profiles/seller-profile.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -48,4 +50,7 @@ export class User {
 
   @OneToMany(() => Product, (product) => product.createdBy)
   productsCreated?: Product[];
+
+  @OneToOne(() => SellerProfile, (profile) => profile.user)
+  sellerProfile?: SellerProfile;
 }

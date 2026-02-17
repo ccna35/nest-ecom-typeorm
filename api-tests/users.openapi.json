@@ -1,0 +1,629 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Users API",
+    "description": "API specification for user management endpoints",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Users",
+      "description": "User management endpoints"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token",
+        "description": "JWT access token stored in HTTP-only cookie"
+      }
+    },
+    "schemas": {
+      "CreateUserDto": {
+        "type": "object",
+        "required": ["email", "name", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "John Doe"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 72,
+            "example": "SecurePassword123"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "customer", "seller"],
+            "example": "customer",
+            "description": "Optional. Defaults to 'customer' if not provided"
+          }
+        }
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "newemail@example.com"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "example": "Jane Doe"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 72,
+            "example": "NewPassword456"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "customer", "seller"],
+            "example": "seller"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": false,
+            "description": "Set to false to deactivate user account"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john.doe@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "customer", "seller"],
+            "example": "customer"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": null
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create new user",
+        "description": "Create a new user account. Public endpoint (no authentication required).",
+        "operationId": "createUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              },
+              "examples": {
+                "customer": {
+                  "summary": "Create customer account",
+                  "value": {
+                    "email": "customer@example.com",
+                    "name": "Customer User",
+                    "password": "password123"
+                  }
+                },
+                "seller": {
+                  "summary": "Create seller account",
+                  "value": {
+                    "email": "seller@example.com",
+                    "name": "Seller User",
+                    "password": "password123",
+                    "role": "seller"
+                  }
+                },
+                "admin": {
+                  "summary": "Create admin account",
+                  "value": {
+                    "email": "admin@example.com",
+                    "name": "Admin User",
+                    "password": "password123",
+                    "role": "admin"
+                  }
+                },
+                "invalid_email": {
+                  "summary": "Invalid email format",
+                  "value": {
+                    "email": "not-an-email",
+                    "name": "Test User",
+                    "password": "password123"
+                  }
+                },
+                "short_password": {
+                  "summary": "Password too short (< 6 chars)",
+                  "value": {
+                    "email": "test@example.com",
+                    "name": "Test User",
+                    "password": "12345"
+                  }
+                },
+                "missing_name": {
+                  "summary": "Missing required field (name)",
+                  "value": {
+                    "email": "test@example.com",
+                    "password": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "email": "customer@example.com",
+                  "name": "Customer User",
+                  "role": "customer",
+                  "isActive": true,
+                  "createdAt": "2024-01-15T10:30:00.000Z",
+                  "updatedAt": "2024-01-15T10:30:00.000Z",
+                  "avatarUrl": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Validation failed or email exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "email_exists": {
+                    "summary": "Email already exists",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "Email already exists",
+                      "error": "Bad Request"
+                    }
+                  },
+                  "validation_errors": {
+                    "summary": "Validation errors",
+                    "value": {
+                      "statusCode": 400,
+                      "message": [
+                        "email must be an email",
+                        "password must be longer than or equal to 6 characters"
+                      ],
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "description": "Retrieve all users ordered by creation date (newest first). Requires ADMIN role.",
+        "operationId": "getAllUsers",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "550e8400-e29b-41d4-a716-446655440001",
+                    "email": "admin@example.com",
+                    "name": "Admin User",
+                    "role": "admin",
+                    "isActive": true,
+                    "createdAt": "2024-01-15T12:00:00.000Z",
+                    "updatedAt": "2024-01-15T12:00:00.000Z",
+                    "avatarUrl": null
+                  },
+                  {
+                    "id": "550e8400-e29b-41d4-a716-446655440002",
+                    "email": "customer@example.com",
+                    "name": "Customer User",
+                    "role": "customer",
+                    "isActive": true,
+                    "createdAt": "2024-01-15T11:00:00.000Z",
+                    "updatedAt": "2024-01-15T11:00:00.000Z",
+                    "avatarUrl": null
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 401,
+                  "message": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Not an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden resource",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user by ID",
+        "description": "Retrieve a specific user by their UUID. Requires authentication.",
+        "operationId": "getUserById",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "email": "customer@example.com",
+                  "name": "Customer User",
+                  "role": "customer",
+                  "isActive": true,
+                  "createdAt": "2024-01-15T10:30:00.000Z",
+                  "updatedAt": "2024-01-15T10:30:00.000Z",
+                  "avatarUrl": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "User not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update user",
+        "description": "Update user information. All fields are optional. Requires authentication.",
+        "operationId": "updateUser",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              },
+              "examples": {
+                "update_name": {
+                  "summary": "Update name only",
+                  "value": {
+                    "name": "John Updated"
+                  }
+                },
+                "update_email": {
+                  "summary": "Update email only",
+                  "value": {
+                    "email": "newemail@example.com"
+                  }
+                },
+                "update_password": {
+                  "summary": "Update password only",
+                  "value": {
+                    "password": "NewSecurePassword456"
+                  }
+                },
+                "deactivate_user": {
+                  "summary": "Deactivate user account",
+                  "value": {
+                    "isActive": false
+                  }
+                },
+                "promote_to_seller": {
+                  "summary": "Update role to seller",
+                  "value": {
+                    "role": "seller"
+                  }
+                },
+                "full_update": {
+                  "summary": "Update multiple fields",
+                  "value": {
+                    "name": "Jane Smith",
+                    "email": "jane.smith@example.com",
+                    "password": "NewPassword789"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "example": {
+                  "id": "550e8400-e29b-41d4-a716-446655440000",
+                  "email": "newemail@example.com",
+                  "name": "John Updated",
+                  "role": "customer",
+                  "isActive": true,
+                  "createdAt": "2024-01-15T10:30:00.000Z",
+                  "updatedAt": "2024-01-15T14:25:00.000Z",
+                  "avatarUrl": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "email_exists": {
+                    "summary": "New email already in use",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "Email already exists",
+                      "error": "Bad Request"
+                    }
+                  },
+                  "validation_error": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "statusCode": 400,
+                      "message": [
+                        "email must be an email"
+                      ],
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user",
+        "description": "Permanently delete a user account. Requires ADMIN role.",
+        "operationId": "deleteUser",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 403,
+                  "message": "Forbidden resource",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "User not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

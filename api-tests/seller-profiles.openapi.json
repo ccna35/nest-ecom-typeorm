@@ -1,0 +1,338 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Seller Profiles API",
+    "description": "API endpoints for managing seller store profiles",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Seller Profiles",
+      "description": "Endpoints for managing seller store information"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
+      }
+    },
+    "schemas": {
+      "UpdateSellerProfileDto": {
+        "type": "object",
+        "properties": {
+          "storeName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Tech Haven Store - Updated"
+          },
+          "storeDescription": {
+            "type": "string",
+            "minLength": 50,
+            "maxLength": 2000,
+            "example": "Tech Haven is your premier destination for cutting-edge technology and electronics. We specialize in laptops, smartphones, gaming consoles, and smart home devices with warranty coverage."
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500,
+            "example": "https://example.com/logos/tech-haven.png"
+          }
+        }
+      },
+      "SellerProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "profile-uuid-123"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "user-uuid-456"
+          },
+          "storeName": {
+            "type": "string",
+            "example": "Tech Haven Store"
+          },
+          "storeDescription": {
+            "type": "string",
+            "example": "Tech Haven is your one-stop shop for all the latest gadgets, electronics, and tech accessories..."
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://example.com/logos/tech-haven.png"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-17T11:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-02-17T11:00:00.000Z"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "seller@example.com"
+              },
+              "name": {
+                "type": "string",
+                "example": "John Seller"
+              },
+              "role": {
+                "type": "string",
+                "enum": ["seller"],
+                "example": "seller"
+              },
+              "isActive": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/seller-profiles": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "List all seller profiles (Public)",
+        "description": "Get all seller profiles for marketplace browsing",
+        "responses": {
+          "200": {
+            "description": "List of seller profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SellerProfile"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "profile-uuid-1",
+                    "userId": "user-uuid-1",
+                    "storeName": "Tech Haven Store",
+                    "storeDescription": "Tech Haven is your one-stop shop for all the latest gadgets...",
+                    "logoUrl": "https://example.com/logos/tech-haven.png",
+                    "createdAt": "2026-02-17T11:00:00.000Z",
+                    "updatedAt": "2026-02-17T11:00:00.000Z",
+                    "user": {
+                      "id": "user-uuid-1",
+                      "email": "seller1@example.com",
+                      "name": "John Seller",
+                      "role": "seller",
+                      "isActive": true
+                    }
+                  },
+                  {
+                    "id": "profile-uuid-2",
+                    "userId": "user-uuid-2",
+                    "storeName": "Fashion Boutique",
+                    "storeDescription": "Your premium fashion destination for designer clothing and accessories...",
+                    "logoUrl": null,
+                    "createdAt": "2026-02-16T10:00:00.000Z",
+                    "updatedAt": "2026-02-16T10:00:00.000Z",
+                    "user": {
+                      "id": "user-uuid-2",
+                      "email": "seller2@example.com",
+                      "name": "Jane Fashion",
+                      "role": "seller",
+                      "isActive": true
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller-profiles/me": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "Get own seller profile (Seller only)",
+        "description": "Retrieve the current seller's profile",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Seller's profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SellerProfile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Not logged in"
+          },
+          "403": {
+            "description": "Forbidden - Not a seller"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Seller Profiles"],
+        "summary": "Update own seller profile (Seller only)",
+        "description": "Update the current seller's store information",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSellerProfileDto"
+              },
+              "examples": {
+                "update-name-and-description": {
+                  "summary": "Update store name and description",
+                  "value": {
+                    "storeName": "Tech Haven Store Premium",
+                    "storeDescription": "Tech Haven Premium is your premier destination for cutting-edge technology and electronics. We specialize in premium laptops, flagship smartphones, high-end gaming consoles, and smart home devices with extended warranty coverage and 24/7 customer support."
+                  }
+                },
+                "add-logo": {
+                  "summary": "Add logo URL",
+                  "value": {
+                    "logoUrl": "https://cdn.example.com/store-logos/tech-haven-premium.png"
+                  }
+                },
+                "full-update": {
+                  "summary": "Update all fields",
+                  "value": {
+                    "storeName": "Tech Haven - Your Tech Partner",
+                    "storeDescription": "Tech Haven has been serving tech enthusiasts for years, providing the latest gadgets, electronics, and accessories with competitive pricing and exceptional customer service. We offer free shipping on orders over $100 and a 30-day satisfaction guarantee.",
+                    "logoUrl": "https://cdn.example.com/logos/tech-haven-v2.png"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Validation failed",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "description-too-short": {
+                    "value": {
+                      "statusCode": 400,
+                      "message": [
+                        "storeDescription must be longer than or equal to 50 characters"
+                      ],
+                      "error": "Bad Request"
+                    }
+                  },
+                  "invalid-url": {
+                    "value": {
+                      "statusCode": 400,
+                      "message": [
+                        "logoUrl must be a URL address"
+                      ],
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not a seller"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        }
+      }
+    },
+    "/seller-profiles/{userId}": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "Get seller profile by user ID (Public)",
+        "description": "Retrieve a specific seller's profile by their user ID",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "User ID of the seller"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seller profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SellerProfile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profile not found (returns null)"
+          }
+        }
+      }
+    }
+  }
+}

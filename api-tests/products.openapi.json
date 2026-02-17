@@ -1,0 +1,588 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Products API",
+    "description": "API specification for product management endpoints",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Products",
+      "description": "Product management endpoints"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token",
+        "description": "JWT access token stored in HTTP-only cookie"
+      }
+    },
+    "schemas": {
+      "CreateProductDto": {
+        "type": "object",
+        "required": ["sku", "name", "price", "categoryId"],
+        "properties": {
+          "sku": {
+            "type": "string",
+            "maxLength": 80,
+            "example": "SKU-TECH-001"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Wireless Headphones"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Premium wireless headphones with noise cancellation"
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$",
+            "example": "199.99"
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 50
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440100"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "UpdateProductDto": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$"
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440100"
+          },
+          "name": {
+            "type": "string",
+            "example": "Electronics"
+          },
+          "slug": {
+            "type": "string",
+            "example": "electronics"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Gadgets and electronic accessories"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440200"
+          },
+          "sku": {
+            "type": "string",
+            "example": "SKU-TECH-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Wireless Headphones"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Premium wireless headphones with noise cancellation"
+          },
+          "price": {
+            "type": "string",
+            "example": "199.99"
+          },
+          "stock": {
+            "type": "integer",
+            "example": 50
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440100"
+          },
+          "createdById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "example": "550e8400-e29b-41d4-a716-446655440300"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/products": {
+      "post": {
+        "tags": ["Products"],
+        "summary": "Create product",
+        "description": "Create a new product. Requires ADMIN or SELLER role.",
+        "operationId": "createProduct",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductDto"
+              },
+              "examples": {
+                "valid": {
+                  "summary": "Valid product",
+                  "value": {
+                    "sku": "SKU-TECH-001",
+                    "name": "Wireless Headphones",
+                    "description": "Premium wireless headphones with noise cancellation",
+                    "price": "199.99",
+                    "stock": 50,
+                    "categoryId": "550e8400-e29b-41d4-a716-446655440100",
+                    "isActive": true
+                  }
+                },
+                "invalid_price": {
+                  "summary": "Invalid price format",
+                  "value": {
+                    "sku": "SKU-TECH-002",
+                    "name": "Speaker",
+                    "price": "19.999",
+                    "categoryId": "550e8400-e29b-41d4-a716-446655440100"
+                  }
+                },
+                "missing_fields": {
+                  "summary": "Missing required fields",
+                  "value": {
+                    "name": "Speaker"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "sku_exists": {
+                    "summary": "SKU already exists",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "SKU already exists",
+                      "error": "Bad Request"
+                    }
+                  },
+                  "invalid_category": {
+                    "summary": "Invalid categoryId",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "Invalid categoryId",
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Products"],
+        "summary": "List products",
+        "description": "Get all products. Public endpoint.",
+        "operationId": "getAllProducts",
+        "responses": {
+          "200": {
+            "description": "List of products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "description": "Retrieve a product by UUID. Public endpoint.",
+        "operationId": "getProductById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Product not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product",
+        "description": "Update a product. Requires ADMIN or SELLER role. Sellers can only update their own products.",
+        "operationId": "updateProduct",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductDto"
+              },
+              "examples": {
+                "update_name": {
+                  "summary": "Update name",
+                  "value": {
+                    "name": "Updated Product Name"
+                  }
+                },
+                "update_price_stock": {
+                  "summary": "Update price and stock",
+                  "value": {
+                    "price": "149.99",
+                    "stock": 25
+                  }
+                },
+                "change_category": {
+                  "summary": "Change category",
+                  "value": {
+                    "categoryId": "550e8400-e29b-41d4-a716-446655440101"
+                  }
+                },
+                "deactivate": {
+                  "summary": "Deactivate product",
+                  "value": {
+                    "isActive": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "sku_exists": {
+                    "summary": "SKU already exists",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "SKU already exists",
+                      "error": "Bad Request"
+                    }
+                  },
+                  "invalid_category": {
+                    "summary": "Invalid categoryId",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "Invalid categoryId",
+                      "error": "Bad Request"
+                    }
+                  },
+                  "not_owner": {
+                    "summary": "Seller cannot update another seller's product",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "You can only update your own products",
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Product not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "description": "Delete a product. Requires ADMIN or SELLER role. Sellers can only delete their own products.",
+        "operationId": "deleteProduct",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product deleted",
+            "content": {
+              "application/json": {
+                "example": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "not_owner": {
+                    "summary": "Seller cannot delete another seller's product",
+                    "value": {
+                      "statusCode": 400,
+                      "message": "You can only delete your own products",
+                      "error": "Bad Request"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "Product not found",
+                  "error": "Not Found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

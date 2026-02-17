@@ -49,7 +49,7 @@ export class ProductsService {
 
   findAll(): Promise<Product[]> {
     return this.productsRepo.find({
-      relations: { category: true },
+      // relations: { category: true },
       order: { createdAt: 'DESC' },
     });
   }

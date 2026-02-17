@@ -6,6 +6,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { SellerProfilesModule } from './modules/seller-profiles/seller-profiles.module';
+import { SellerApplicationsModule } from './modules/seller-applications/seller-applications.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
@@ -17,6 +19,8 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
     CategoriesModule,
     ProductsModule,
     AuthModule,
+    SellerProfilesModule,
+    SellerApplicationsModule,
   ],
   providers: [
     {

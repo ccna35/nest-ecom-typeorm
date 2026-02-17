@@ -1,0 +1,658 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Seller Management API - Complete",
+    "description": "Complete API specification for seller application workflow and profile management",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    },
+    {
+      "url": "https://api.example.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Seller Applications",
+      "description": "Customer-to-seller application workflow endpoints"
+    },
+    {
+      "name": "Seller Profiles",
+      "description": "Seller store profile management endpoints"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token",
+        "description": "JWT access token stored in HTTP-only cookie"
+      }
+    },
+    "schemas": {
+      "CreateSellerApplicationDto": {
+        "type": "object",
+        "required": ["storeName", "storeDescription"],
+        "properties": {
+          "storeName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Tech Haven Store"
+          },
+          "storeDescription": {
+            "type": "string",
+            "minLength": 50,
+            "maxLength": 2000,
+            "example": "Tech Haven is your one-stop shop for all the latest gadgets, electronics, and tech accessories. We pride ourselves on offering competitive prices and excellent customer service."
+          }
+        }
+      },
+      "RejectApplicationDto": {
+        "type": "object",
+        "required": ["rejectionReason"],
+        "properties": {
+          "rejectionReason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 1000,
+            "example": "The store description does not provide enough information about your business model."
+          }
+        }
+      },
+      "UpdateSellerProfileDto": {
+        "type": "object",
+        "properties": {
+          "storeName": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Tech Haven Store Premium"
+          },
+          "storeDescription": {
+            "type": "string",
+            "minLength": 50,
+            "maxLength": 2000,
+            "example": "Updated description with at least 50 characters..."
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 500,
+            "example": "https://example.com/logos/tech-haven.png"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "customer", "seller"]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SellerApplication": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "storeDescription": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "reviewedById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "reviewedBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/User"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "SellerProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "storeDescription": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer"
+          },
+          "message": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/seller-applications": {
+      "post": {
+        "tags": ["Seller Applications"],
+        "summary": "Submit seller application",
+        "description": "Allows a customer to submit an application to become a seller. Requires CUSTOMER role.",
+        "operationId": "createSellerApplication",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSellerApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Application created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerApplication"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not a customer"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Seller Applications"],
+        "summary": "List all applications",
+        "description": "Get all seller applications with optional status filter. Requires ADMIN role.",
+        "operationId": "getAllApplications",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "approved", "rejected"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of applications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SellerApplication"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not an admin"
+          }
+        }
+      }
+    },
+    "/seller-applications/me": {
+      "get": {
+        "tags": ["Seller Applications"],
+        "summary": "Get own application",
+        "description": "Retrieve the current user's seller application. Requires CUSTOMER or SELLER role.",
+        "operationId": "getMyApplication",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User's application or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SellerApplication"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/seller-applications/{id}": {
+      "get": {
+        "tags": ["Seller Applications"],
+        "summary": "Get application by ID",
+        "description": "Retrieve a specific seller application. Requires ADMIN role.",
+        "operationId": "getApplicationById",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerApplication"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/seller-applications/{id}/approve": {
+      "post": {
+        "tags": ["Seller Applications"],
+        "summary": "Approve application",
+        "description": "Approve a pending seller application. Updates user role to SELLER and creates seller profile. Requires ADMIN role.",
+        "operationId": "approveApplication",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Application approved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerApplication"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Application not pending"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/seller-applications/{id}/reject": {
+      "post": {
+        "tags": ["Seller Applications"],
+        "summary": "Reject application",
+        "description": "Reject a pending seller application with a reason. Requires ADMIN role.",
+        "operationId": "rejectApplication",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Application rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerApplication"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/seller-profiles": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "List all seller profiles",
+        "description": "Get all seller profiles for marketplace browsing. Public endpoint.",
+        "operationId": "getAllProfiles",
+        "responses": {
+          "200": {
+            "description": "List of seller profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SellerProfile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seller-profiles/me": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "Get own seller profile",
+        "description": "Retrieve the current seller's profile. Requires SELLER role.",
+        "operationId": "getMyProfile",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seller's profile or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SellerProfile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Not a seller"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Seller Profiles"],
+        "summary": "Update own seller profile",
+        "description": "Update the current seller's store information. Requires SELLER role.",
+        "operationId": "updateMyProfile",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSellerProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SellerProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/seller-profiles/{userId}": {
+      "get": {
+        "tags": ["Seller Profiles"],
+        "summary": "Get seller profile by user ID",
+        "description": "Retrieve a specific seller's profile by their user ID. Public endpoint.",
+        "operationId": "getProfileByUserId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seller profile or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SellerProfile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
