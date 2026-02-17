@@ -1,9 +1,6 @@
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { DataSourceOptions } from 'typeorm';
-import { User } from '../modules/users/user.entity';
-import { Category } from '../modules/categories/category.entity';
-import { Product } from '../modules/products/product.entity';
 import dataSource from './data-source';
 
 export const typeOrmOptions: TypeOrmModuleAsyncOptions = {
