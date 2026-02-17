@@ -22,10 +22,12 @@ This directory contains OpenAPI 3.0 specification files for testing the E-commer
 4. Select the JSON file(s) you want to import:
    - `seller-management-complete.openapi.json` (seller features combined)
    - `users.openapi.json` (user management)
-  - `auth.openapi.json`
-  - `products.openapi.json`
-  - `categories.openapi.json`
-   - Or import individual files: `seller-applications.openapi.json`, `seller-profiles.openapi.json`
+
+- `auth.openapi.json`
+- `products.openapi.json`
+- `categories.openapi.json`
+- Or import individual files: `seller-applications.openapi.json`, `seller-profiles.openapi.json`
+
 5. Configure import settings:
    - ✅ Import as a new API collection
    - ✅ Generate example values
@@ -63,6 +65,7 @@ Before testing, create an environment in Apidog with these variables:
 1. **Start your NestJS server**: `npm run start:dev`
 
 2. **Create test users** (if not already created):
+
    ```bash
    # Customer
    POST /auth/signup
@@ -94,6 +97,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Sign Up
 
 **Endpoint**: `POST /auth/signup`
+
 - **Auth**: None (public endpoint)
 - **Body**:
   ```json
@@ -109,6 +113,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 2. Log In
 
 **Endpoint**: `POST /auth/login`
+
 - **Auth**: None (public endpoint)
 - **Body**:
   ```json
@@ -122,12 +127,14 @@ Before testing, create an environment in Apidog with these variables:
 #### 3. Refresh Tokens
 
 **Endpoint**: `POST /auth/refresh`
+
 - **Auth**: Refresh token cookie
 - **Expected**: 200 OK with new cookies set
 
 #### 4. Log Out
 
 **Endpoint**: `POST /auth/logout`
+
 - **Auth**: Refresh token cookie
 - **Expected**: 200 OK with `{ "ok": true }`
 
@@ -136,6 +143,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Create Category (Admin Only)
 
 **Endpoint**: `POST /categories`
+
 - **Auth**: Admin access token (cookie)
 - **Body**:
   ```json
@@ -150,18 +158,21 @@ Before testing, create an environment in Apidog with these variables:
 #### 2. List Categories (Public)
 
 **Endpoint**: `GET /categories`
+
 - **Auth**: None
 - **Expected**: 200 OK with array of categories
 
 #### 3. Get Category by ID (Public)
 
 **Endpoint**: `GET /categories/{id}`
+
 - **Path Param**: Use `testCategoryId`
 - **Expected**: 200 OK
 
 #### 4. Update Category (Admin Only)
 
 **Endpoint**: `PATCH /categories/{id}`
+
 - **Auth**: Admin access token (cookie)
 - **Body**:
   ```json
@@ -174,6 +185,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 5. Delete Category (Admin Only)
 
 **Endpoint**: `DELETE /categories/{id}`
+
 - **Auth**: Admin access token (cookie)
 - **Expected**: 200 OK
 
@@ -182,6 +194,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Create Product (Admin or Seller)
 
 **Endpoint**: `POST /products`
+
 - **Auth**: Admin or seller access token (cookie)
 - **Body**:
   ```json
@@ -201,18 +214,21 @@ Before testing, create an environment in Apidog with these variables:
 #### 2. List Products (Public)
 
 **Endpoint**: `GET /products`
+
 - **Auth**: None
 - **Expected**: 200 OK with array of products
 
 #### 3. Get Product by ID (Public)
 
 **Endpoint**: `GET /products/{id}`
+
 - **Path Param**: Use `testProductId`
 - **Expected**: 200 OK
 
 #### 4. Update Product (Admin or Seller)
 
 **Endpoint**: `PATCH /products/{id}`
+
 - **Auth**: Admin or seller access token (cookie)
 - **Body**:
   ```json
@@ -226,6 +242,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 5. Delete Product (Admin or Seller)
 
 **Endpoint**: `DELETE /products/{id}`
+
 - **Auth**: Admin or seller access token (cookie)
 - **Expected**: 200 OK
 
@@ -234,6 +251,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Customer Submits Application
 
 **Endpoint**: `POST /seller-applications`
+
 - **Auth**: Customer access token (cookie)
 - **Body**:
   ```json
@@ -248,18 +266,21 @@ Before testing, create an environment in Apidog with these variables:
 #### 2. Customer Checks Application Status
 
 **Endpoint**: `GET /seller-applications/me`
+
 - **Auth**: Customer access token
 - **Expected**: 200 OK with application details (status: "pending")
 
 #### 3. Admin Lists Pending Applications
 
 **Endpoint**: `GET /seller-applications?status=pending`
+
 - **Auth**: Admin access token
 - **Expected**: 200 OK with array of pending applications
 
 #### 4a. Admin Approves Application
 
 **Endpoint**: `POST /seller-applications/{testApplicationId}/approve`
+
 - **Auth**: Admin access token
 - **Path Param**: Use `testApplicationId` from step 1
 - **Expected**: 200 OK with approved application
@@ -270,6 +291,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 4b. OR Admin Rejects Application
 
 **Endpoint**: `POST /seller-applications/{testApplicationId}/reject`
+
 - **Auth**: Admin access token
 - **Body**:
   ```json
@@ -284,12 +306,14 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Seller Views Own Profile
 
 **Endpoint**: `GET /seller-profiles/me`
+
 - **Auth**: Seller access token (customer from above, now a seller)
 - **Expected**: 200 OK with profile details
 
 #### 2. Seller Updates Profile
 
 **Endpoint**: `PATCH /seller-profiles/me`
+
 - **Auth**: Seller access token
 - **Body**:
   ```json
@@ -304,12 +328,14 @@ Before testing, create an environment in Apidog with these variables:
 #### 3. Public Views All Seller Profiles
 
 **Endpoint**: `GET /seller-profiles`
+
 - **Auth**: None (public endpoint)
 - **Expected**: 200 OK with array of all seller profiles
 
 #### 4. Public Views Specific Seller Profile
 
 **Endpoint**: `GET /seller-profiles/{userId}`
+
 - **Auth**: None (public endpoint)
 - **Path Param**: Use `testUserId` (seller's user ID)
 - **Expected**: 200 OK with seller profile or null
@@ -319,6 +345,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 1. Create New User
 
 **Endpoint**: `POST /users`
+
 - **Auth**: None (public endpoint)
 - **Body**:
   ```json
@@ -334,6 +361,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 2. Create User with Specific Role
 
 **Endpoint**: `POST /users`
+
 - **Body**:
   ```json
   {
@@ -348,12 +376,14 @@ Before testing, create an environment in Apidog with these variables:
 #### 3. Get All Users (Admin Only)
 
 **Endpoint**: `GET /users`
+
 - **Auth**: Admin access token (cookie)
 - **Expected**: 200 OK with array of users
 
 #### 4. Get User by ID
 
 **Endpoint**: `GET /users/{id}`
+
 - **Auth**: Any authenticated user (cookie)
 - **Path Param**: Use `testUserId`
 - **Expected**: 200 OK with user details
@@ -361,6 +391,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 5. Update User Name
 
 **Endpoint**: `PATCH /users/{id}`
+
 - **Auth**: Authenticated user (cookie)
 - **Path Param**: Use `testUserId`
 - **Body**:
@@ -374,6 +405,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 6. Update User Email
 
 **Endpoint**: `PATCH /users/{id}`
+
 - **Body**:
   ```json
   {
@@ -385,6 +417,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 7. Update User Password
 
 **Endpoint**: `PATCH /users/{id}`
+
 - **Body**:
   ```json
   {
@@ -396,6 +429,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 8. Deactivate User
 
 **Endpoint**: `PATCH /users/{id}`
+
 - **Body**:
   ```json
   {
@@ -407,6 +441,7 @@ Before testing, create an environment in Apidog with these variables:
 #### 9. Delete User (Admin Only)
 
 **Endpoint**: `DELETE /users/{id}`
+
 - **Auth**: Admin access token (cookie)
 - **Path Param**: Use `testUserId`
 - **Expected**: 200 OK
@@ -525,6 +560,7 @@ All endpoints include example error responses:
 ## Support
 
 For issues or questions:
+
 1. Check the OpenAPI spec for detailed request/response schemas
 2. Verify environment variables are set correctly
 3. Ensure the server is running on the correct port

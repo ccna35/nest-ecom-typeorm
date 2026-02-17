@@ -540,9 +540,7 @@
                     "summary": "Validation failed",
                     "value": {
                       "statusCode": 400,
-                      "message": [
-                        "email must be an email"
-                      ],
+                      "message": ["email must be an email"],
                       "error": "Bad Request"
                     }
                   }

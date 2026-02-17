@@ -262,18 +262,14 @@
                   "description-too-short": {
                     "value": {
                       "statusCode": 400,
-                      "message": [
-                        "storeDescription must be longer than or equal to 50 characters"
-                      ],
+                      "message": ["storeDescription must be longer than or equal to 50 characters"],
                       "error": "Bad Request"
                     }
                   },
                   "invalid-url": {
                     "value": {
                       "statusCode": 400,
-                      "message": [
-                        "logoUrl must be a URL address"
-                      ],
+                      "message": ["logoUrl must be a URL address"],
                       "error": "Bad Request"
                     }
                   }
