@@ -3,7 +3,7 @@ import { SellerProfilesService } from './seller-profiles.service';
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/user.entity';
+import { UserRole } from '@prisma/client';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AuthenticatedRequest } from '../auth/authenticatedRequest.type';
 
@@ -18,14 +18,14 @@ export class SellerProfilesController {
     return this.sellerProfilesService.findAll();
   }
 
-  @Roles(UserRole.SELLER)
+  @Roles(UserRole.seller)
   @Get('me')
   async getMyProfile(@Req() request: AuthenticatedRequest) {
     const profile = await this.sellerProfilesService.findByUserId(request.user.userId);
     return profile;
   }
 
-  @Roles(UserRole.SELLER)
+  @Roles(UserRole.seller)
   @Patch('me')
   updateMyProfile(@Req() request: AuthenticatedRequest, @Body() dto: UpdateSellerProfileDto) {
     return this.sellerProfilesService.update(request.user.userId, dto);

@@ -1,48 +1,46 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { SellerProfile } from './seller-profile.entity';
+import { PrismaService } from '../../database/prisma.service';
+import { SellerProfile } from '@prisma/client';
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto';
 
 @Injectable()
 export class SellerProfilesService {
-  constructor(
-    @InjectRepository(SellerProfile)
-    private readonly sellerProfilesRepo: Repository<SellerProfile>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(
     userId: string,
     storeName: string,
     storeDescription: string,
   ): Promise<SellerProfile> {
-    const existing = await this.sellerProfilesRepo.findOne({
+    const existing = await this.prisma.sellerProfile.findUnique({
       where: { userId },
     });
     if (existing) {
       throw new BadRequestException('Seller profile already exists');
     }
 
-    const profile = this.sellerProfilesRepo.create({
-      userId,
-      storeName,
-      storeDescription,
+    const profile = await this.prisma.sellerProfile.create({
+      data: {
+        userId,
+        storeName,
+        storeDescription,
+      },
     });
 
-    return this.sellerProfilesRepo.save(profile);
+    return profile;
   }
 
   async findAll(): Promise<SellerProfile[]> {
-    return this.sellerProfilesRepo.find({
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
+    return this.prisma.sellerProfile.findMany({
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findByUserId(userId: string): Promise<SellerProfile | null> {
-    return this.sellerProfilesRepo.findOne({
+    return this.prisma.sellerProfile.findUnique({
       where: { userId },
-      relations: ['user'],
+      include: { user: true },
     });
   }
 
@@ -52,8 +50,10 @@ export class SellerProfilesService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    Object.assign(profile, dto);
-    return this.sellerProfilesRepo.save(profile);
+    return this.prisma.sellerProfile.update({
+      where: { userId },
+      data: dto,
+    });
   }
 
   async remove(userId: string): Promise<void> {
@@ -62,6 +62,8 @@ export class SellerProfilesService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    await this.sellerProfilesRepo.remove(profile);
+    await this.prisma.sellerProfile.delete({
+      where: { userId },
+    });
   }
 }

@@ -1,14 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { RefreshToken } from './refresh-token.entity';
-import { User, UserRole } from '../users/user.entity';
+import { User, UserRole, RefreshToken } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -20,15 +18,22 @@ describe('AuthService', () => {
   let usersService: jest.Mocked<UsersService>;
   let jwtService: jest.Mocked<JwtService>;
   let configService: jest.Mocked<ConfigService>;
-  let refreshTokensRepo: jest.Mocked<Repository<RefreshToken>>;
+  let prismaService: {
+    refreshToken: {
+      create: jest.Mock;
+      findMany: jest.Mock;
+      update: jest.Mock;
+    };
+  };
 
   const buildUser = (overrides: Partial<User> = {}): User => ({
     id: 'u1',
     email: 'a@b.com',
     name: 'Test User',
     passwordHash: 'HASH',
-    role: UserRole.CUSTOMER,
+    role: UserRole.customer,
     isActive: true,
+    avatarUrl: null,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
     ...overrides,
@@ -37,7 +42,6 @@ describe('AuthService', () => {
   const buildRefreshToken = (user: User): RefreshToken => ({
     id: 't1',
     userId: user.id,
-    user,
     tokenHash: 'HASHED',
     expiresAt: new Date('2024-02-01T00:00:00.000Z'),
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
@@ -45,6 +49,14 @@ describe('AuthService', () => {
   });
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      refreshToken: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -61,8 +73,8 @@ describe('AuthService', () => {
           useValue: { get: jest.fn() },
         },
         {
-          provide: getRepositoryToken(RefreshToken),
-          useValue: { create: jest.fn(), save: jest.fn(), find: jest.fn() },
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
@@ -71,7 +83,7 @@ describe('AuthService', () => {
     usersService = moduleRef.get(UsersService);
     jwtService = moduleRef.get(JwtService);
     configService = moduleRef.get(ConfigService);
-    refreshTokensRepo = moduleRef.get(getRepositoryToken(RefreshToken));
+    prismaService = moduleRef.get(PrismaService) as typeof prismaService;
 
     configService.get.mockReturnValue(undefined);
   });
@@ -83,8 +95,7 @@ describe('AuthService', () => {
       .mockResolvedValueOnce('ACCESS_TOKEN')
       .mockResolvedValueOnce('REFRESH_TOKEN');
     (bcrypt.hash as jest.Mock).mockResolvedValue('HASHED');
-    refreshTokensRepo.create.mockReturnValue(buildRefreshToken(createdUser));
-    refreshTokensRepo.save.mockResolvedValue(buildRefreshToken(createdUser));
+    prismaService.refreshToken.create.mockResolvedValue(buildRefreshToken(createdUser));
 
     const result = await authService.signup({
       email: 'a@b.com',
@@ -96,7 +107,7 @@ describe('AuthService', () => {
       email: 'a@b.com',
       name: 'Test User',
       password: 'pass',
-      role: UserRole.CUSTOMER,
+      role: UserRole.customer,
     });
     expect(result).toMatchObject({
       user: { id: 'u1', email: 'a@b.com' },
@@ -145,8 +156,7 @@ describe('AuthService', () => {
       .mockResolvedValueOnce('ACCESS_TOKEN')
       .mockResolvedValueOnce('REFRESH_TOKEN');
     (bcrypt.hash as jest.Mock).mockResolvedValue('HASHED');
-    refreshTokensRepo.create.mockReturnValue(buildRefreshToken(testUser));
-    refreshTokensRepo.save.mockResolvedValue(buildRefreshToken(testUser));
+    prismaService.refreshToken.create.mockResolvedValue(buildRefreshToken(testUser));
 
     const result = await authService.login(testUser);
 
@@ -160,15 +170,15 @@ describe('AuthService', () => {
     const testUser = buildUser();
     const activeToken = buildRefreshToken(testUser);
     jwtService.verifyAsync.mockResolvedValue({ userId: testUser.id, role: testUser.role });
-    refreshTokensRepo.find.mockResolvedValue([activeToken]);
+    prismaService.refreshToken.findMany.mockResolvedValue([activeToken]);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     usersService.findOne.mockResolvedValue(testUser);
     jwtService.signAsync
       .mockResolvedValueOnce('ACCESS_TOKEN')
       .mockResolvedValueOnce('REFRESH_TOKEN');
     (bcrypt.hash as jest.Mock).mockResolvedValue('HASHED');
-    refreshTokensRepo.create.mockReturnValue(buildRefreshToken(testUser));
-    refreshTokensRepo.save.mockResolvedValue(buildRefreshToken(testUser));
+    prismaService.refreshToken.create.mockResolvedValue(buildRefreshToken(testUser));
+    prismaService.refreshToken.update.mockResolvedValue({ ...activeToken, revokedAt: new Date() });
 
     const result = await authService.refresh('REFRESH_TOKEN');
 
@@ -176,15 +186,18 @@ describe('AuthService', () => {
       user: { id: 'u1', email: 'a@b.com' },
       tokens: { accessToken: 'ACCESS_TOKEN', refreshToken: 'REFRESH_TOKEN' },
     });
-    expect(refreshTokensRepo.save).toHaveBeenCalledWith(
-      expect.objectContaining({ id: activeToken.id, revokedAt: expect.any(Date) }),
+    expect(prismaService.refreshToken.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: activeToken.id },
+        data: { revokedAt: expect.any(Date) },
+      }),
     );
   });
 
   it('refresh: throws when refresh token is not recognized', async () => {
     const testUser = buildUser();
     jwtService.verifyAsync.mockResolvedValue({ userId: testUser.id, role: testUser.role });
-    refreshTokensRepo.find.mockResolvedValue([]);
+    prismaService.refreshToken.findMany.mockResolvedValue([]);
     (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
     await expect(authService.refresh('REFRESH_TOKEN')).rejects.toBeInstanceOf(
@@ -206,13 +219,17 @@ describe('AuthService', () => {
     const testUser = buildUser();
     const activeToken = buildRefreshToken(testUser);
     jwtService.verifyAsync.mockResolvedValue({ userId: testUser.id, role: testUser.role });
-    refreshTokensRepo.find.mockResolvedValue([activeToken]);
+    prismaService.refreshToken.findMany.mockResolvedValue([activeToken]);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+    prismaService.refreshToken.update.mockResolvedValue({ ...activeToken, revokedAt: new Date() });
 
     await authService.logout('REFRESH_TOKEN');
 
-    expect(refreshTokensRepo.save).toHaveBeenCalledWith(
-      expect.objectContaining({ id: activeToken.id, revokedAt: expect.any(Date) }),
+    expect(prismaService.refreshToken.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: activeToken.id },
+        data: { revokedAt: expect.any(Date) },
+      }),
     );
   });
 

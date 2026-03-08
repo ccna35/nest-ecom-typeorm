@@ -1,14 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository, IsNull } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Response } from 'express';
+import { PrismaService } from '../../database/prisma.service';
 import { UsersService } from '../users/users.service';
-import { User, UserRole } from '../users/user.entity';
+import { User, UserRole, RefreshToken } from '@prisma/client';
 import { SignupDto } from './dto/signup.dto';
-import { RefreshToken } from './refresh-token.entity';
 
 export interface JwtPayload {
   userId: string;
@@ -30,8 +28,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
-    @InjectRepository(RefreshToken)
-    private readonly refreshTokensRepo: Repository<RefreshToken>,
+    private readonly prisma: PrismaService,
   ) {}
 
   async signup(dto: SignupDto): Promise<{ user: Omit<User, 'passwordHash'>; tokens: AuthTokens }> {
@@ -39,7 +36,7 @@ export class AuthService {
       email: dto.email,
       name: dto.name,
       password: dto.password,
-      role: UserRole.CUSTOMER,
+      role: UserRole.customer,
     });
 
     const tokens = await this.issueTokens(user);
@@ -71,8 +68,10 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not recognized');
     }
 
-    activeToken.revokedAt = new Date();
-    await this.refreshTokensRepo.save(activeToken);
+    await this.prisma.refreshToken.update({
+      where: { id: activeToken.id },
+      data: { revokedAt: new Date() },
+    });
 
     const user = await this.usersService.findOne(payload.userId);
     const tokens = await this.issueTokens(user);
@@ -87,8 +86,10 @@ export class AuthService {
       const payload = await this.verifyRefreshToken(refreshToken);
       const activeToken = await this.findActiveRefreshToken(payload.userId, refreshToken);
       if (activeToken) {
-        activeToken.revokedAt = new Date();
-        await this.refreshTokensRepo.save(activeToken);
+        await this.prisma.refreshToken.update({
+          where: { id: activeToken.id },
+          data: { revokedAt: new Date() },
+        });
       }
     } catch {
       // Best-effort logout: ignore invalid/expired tokens.
@@ -145,13 +146,13 @@ export class AuthService {
     const tokenHash = await bcrypt.hash(refreshToken, this.refreshTokenSaltRounds);
     const expiresAt = new Date(Date.now() + this.refreshTtlMs);
 
-    const record = this.refreshTokensRepo.create({
-      userId,
-      tokenHash,
-      expiresAt,
+    await this.prisma.refreshToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt,
+      },
     });
-
-    await this.refreshTokensRepo.save(record);
   }
 
   private async findActiveRefreshToken(
@@ -159,13 +160,15 @@ export class AuthService {
     refreshToken: string,
   ): Promise<RefreshToken | null> {
     const now = new Date();
-    const activeTokens = await this.refreshTokensRepo.find({
+    const activeTokens = await this.prisma.refreshToken.findMany({
       where: {
         userId,
-        revokedAt: IsNull(),
-        expiresAt: MoreThan(now),
+        revokedAt: null,
+        expiresAt: {
+          gt: now,
+        },
       },
-      order: { createdAt: 'DESC' },
+      orderBy: { createdAt: 'desc' },
     });
 
     for (const token of activeTokens) {

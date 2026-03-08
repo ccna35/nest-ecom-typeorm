@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { User, UserRole } from '../users/user.entity';
+import { User, UserRole } from '@prisma/client';
 
 export type AuthenticatedRequest = { user: { userId: string; role: UserRole } };
 

@@ -4,7 +4,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/user.entity';
+import { UserRole } from '@prisma/client';
 import { Public } from '../auth/decorators/public.decorator';
 import { AuthenticatedRequest } from '../auth/authenticatedRequest.type';
 
@@ -14,7 +14,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SELLER)
+  @Roles(UserRole.admin, UserRole.seller)
   create(@Body() dto: CreateProductDto, @Req() req: AuthenticatedRequest) {
     return this.productsService.create(dto, req.user);
   }
@@ -32,13 +32,13 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.SELLER)
+  @Roles(UserRole.admin, UserRole.seller)
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: AuthenticatedRequest) {
     return this.productsService.update(id, dto, req.user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.SELLER)
+  @Roles(UserRole.admin, UserRole.seller)
   remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return this.productsService.remove(id, req.user);
   }

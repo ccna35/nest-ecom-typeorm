@@ -1,41 +1,43 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../../database/prisma.service';
+import { User, UserRole } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserRole } from './user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private readonly usersRepo: Repository<User>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateUserDto): Promise<User> {
-    const existing = await this.usersRepo.findOne({
+    const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
     if (existing) throw new BadRequestException('Email already exists');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = this.usersRepo.create({
-      email: dto.email,
-      name: dto.name,
-      passwordHash,
-      role: dto.role ?? UserRole.CUSTOMER,
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        name: dto.name,
+        passwordHash,
+        role: dto.role ?? UserRole.customer,
+      },
     });
 
-    return this.usersRepo.save(user);
+    return user;
   }
 
   findAll(): Promise<User[]> {
-    return this.usersRepo.find({ order: { createdAt: 'DESC' } });
+    return this.prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.usersRepo.findOne({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
@@ -44,7 +46,7 @@ export class UsersService {
     const user = await this.findOne(id);
 
     if (dto.email && dto.email !== user.email) {
-      const existing = await this.usersRepo.findOne({
+      const existing = await this.prisma.user.findUnique({
         where: { email: dto.email },
       });
       if (existing) throw new BadRequestException('Email already exists');
@@ -55,16 +57,26 @@ export class UsersService {
       delete (dto as any).password;
     }
 
-    Object.assign(user, dto);
-    return this.usersRepo.save(user);
+    const updateData = {
+      ...dto,
+    };
+
+    return this.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
-    await this.usersRepo.remove(user);
+    await this.findOne(id);
+    await this.prisma.user.delete({
+      where: { id },
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepo.findOne({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
   }
 }

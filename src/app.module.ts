@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { typeOrmOptions } from './database/typeorm.options';
+import { PrismaModule } from './database/prisma.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { UsersModule } from './modules/users/users.module';
@@ -13,8 +12,8 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forRootAsync(typeOrmOptions),
     ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
     UsersModule,
     CategoriesModule,
     ProductsModule,

@@ -1,8 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { SellerApplicationsController } from './seller-applications.controller';
 import { SellerApplicationsService } from './seller-applications.service';
-import { ApplicationStatus } from './seller-application.entity';
-import { UserRole } from '../users/user.entity';
+import { ApplicationStatus, UserRole } from '@prisma/client';
 
 describe('SellerApplicationsController', () => {
   let controller: SellerApplicationsController;
@@ -13,7 +12,7 @@ describe('SellerApplicationsController', () => {
     userId: 'u1',
     storeName: 'Test Store',
     storeDescription: 'A test store description',
-    status: ApplicationStatus.PENDING,
+    status: ApplicationStatus.pending,
     rejectionReason: null,
     reviewedById: null,
     reviewedAt: null,
@@ -21,7 +20,7 @@ describe('SellerApplicationsController', () => {
     updatedAt: new Date(),
   };
 
-  const mockRequest = (userId: string, role: UserRole = UserRole.CUSTOMER) => ({
+  const mockRequest = (userId: string, role: UserRole = UserRole.customer) => ({
     user: { userId, role },
   });
 
@@ -86,11 +85,11 @@ describe('SellerApplicationsController', () => {
     });
 
     it('should filter by status if provided', async () => {
-      service.findAll.mockResolvedValue([mockApplication] as any);
+      service.findAll.mockResolvedValue([mockApplication] as never);
 
-      await controller.findAll(ApplicationStatus.PENDING);
+      await controller.findAll(ApplicationStatus.pending);
 
-      expect(service.findAll).toHaveBeenCalledWith(ApplicationStatus.PENDING);
+      expect(service.findAll).toHaveBeenCalledWith(ApplicationStatus.pending);
     });
   });
 
@@ -107,13 +106,13 @@ describe('SellerApplicationsController', () => {
 
   describe('approve', () => {
     it('should approve application', async () => {
-      const approvedApplication = { ...mockApplication, status: ApplicationStatus.APPROVED };
-      service.approve.mockResolvedValue(approvedApplication as any);
+      const approvedApplication = { ...mockApplication, status: ApplicationStatus.approved };
+      service.approve.mockResolvedValue(approvedApplication as never);
 
-      const result = await controller.approve('a1', mockRequest('admin1', UserRole.ADMIN) as any);
+      const result = await controller.approve('a1', mockRequest('admin1', UserRole.admin) as never);
 
       expect(service.approve).toHaveBeenCalledWith('a1', 'admin1');
-      expect(result.status).toBe(ApplicationStatus.APPROVED);
+      expect(result.status).toBe(ApplicationStatus.approved);
     });
   });
 
@@ -121,17 +120,17 @@ describe('SellerApplicationsController', () => {
     it('should reject application with reason', async () => {
       const rejectedApplication = {
         ...mockApplication,
-        status: ApplicationStatus.REJECTED,
+        status: ApplicationStatus.rejected,
         rejectionReason: 'Not enough information',
       };
-      service.reject.mockResolvedValue(rejectedApplication as any);
+      service.reject.mockResolvedValue(rejectedApplication as never);
 
-      const result = await controller.reject('a1', mockRequest('admin1', UserRole.ADMIN) as any, {
+      const result = await controller.reject('a1', mockRequest('admin1', UserRole.admin) as never, {
         rejectionReason: 'Not enough information',
       });
 
       expect(service.reject).toHaveBeenCalledWith('a1', 'admin1', 'Not enough information');
-      expect(result.status).toBe(ApplicationStatus.REJECTED);
+      expect(result.status).toBe(ApplicationStatus.rejected);
     });
   });
 });

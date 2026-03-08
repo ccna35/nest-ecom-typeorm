@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { UserRole } from '../users/user.entity';
+import { UserRole } from '@prisma/client';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -12,8 +12,9 @@ describe('AuthController', () => {
     id: 'u1',
     email: 'test@example.com',
     name: 'Test User',
-    role: UserRole.CUSTOMER,
+    role: UserRole.customer,
     isActive: true,
+    avatarUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

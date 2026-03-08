@@ -1,17 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { SellerApplication, ApplicationStatus } from './seller-application.entity';
+import { PrismaService } from '../../database/prisma.service';
+import { SellerApplication, ApplicationStatus, UserRole } from '@prisma/client';
 import { CreateSellerApplicationDto } from './dto/create-seller-application.dto';
 import { UsersService } from '../users/users.service';
 import { SellerProfilesService } from '../seller-profiles/seller-profiles.service';
-import { UserRole } from '../users/user.entity';
 
 @Injectable()
 export class SellerApplicationsService {
   constructor(
-    @InjectRepository(SellerApplication)
-    private readonly applicationsRepo: Repository<SellerApplication>,
+    private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly sellerProfilesService: SellerProfilesService,
   ) {}
@@ -20,12 +17,12 @@ export class SellerApplicationsService {
     const user = await this.usersService.findOne(userId);
 
     // Check user is a customer
-    if (user.role !== UserRole.CUSTOMER) {
+    if (user.role !== UserRole.customer) {
       throw new BadRequestException('Only customers can apply to become sellers');
     }
 
     // Check if application already exists
-    const existing = await this.applicationsRepo.findOne({
+    const existing = await this.prisma.sellerApplication.findUnique({
       where: { userId },
     });
     if (existing) {
@@ -38,29 +35,30 @@ export class SellerApplicationsService {
       throw new BadRequestException('You already have a seller profile');
     }
 
-    const application = this.applicationsRepo.create({
-      userId,
-      storeName: dto.storeName,
-      storeDescription: dto.storeDescription,
-      status: ApplicationStatus.PENDING,
+    const application = await this.prisma.sellerApplication.create({
+      data: {
+        userId,
+        storeName: dto.storeName,
+        storeDescription: dto.storeDescription,
+        status: ApplicationStatus.pending,
+      },
     });
 
-    return this.applicationsRepo.save(application);
+    return application;
   }
 
   async findAll(status?: ApplicationStatus): Promise<SellerApplication[]> {
-    const where = status ? { status } : {};
-    return this.applicationsRepo.find({
-      where,
-      relations: ['user', 'reviewedBy'],
-      order: { createdAt: 'DESC' },
+    return this.prisma.sellerApplication.findMany({
+      ...(status && { where: { status } }),
+      include: { user: true, reviewedBy: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string): Promise<SellerApplication> {
-    const application = await this.applicationsRepo.findOne({
+    const application = await this.prisma.sellerApplication.findUnique({
       where: { id },
-      relations: ['user', 'reviewedBy'],
+      include: { user: true, reviewedBy: true },
     });
     if (!application) {
       throw new NotFoundException('Application not found');
@@ -69,27 +67,33 @@ export class SellerApplicationsService {
   }
 
   async findByUserId(userId: string): Promise<SellerApplication | null> {
-    return this.applicationsRepo.findOne({
+    return this.prisma.sellerApplication.findUnique({
       where: { userId },
-      relations: ['user', 'reviewedBy'],
+      include: { user: true, reviewedBy: true },
     });
   }
 
   async approve(applicationId: string, adminId: string): Promise<SellerApplication> {
     const application = await this.findOne(applicationId);
 
-    if (application.status !== ApplicationStatus.PENDING) {
+    if (application.status !== ApplicationStatus.pending) {
       throw new BadRequestException('Only pending applications can be approved');
     }
 
     // Update application status
-    application.status = ApplicationStatus.APPROVED;
-    application.reviewedById = adminId;
-    application.reviewedAt = new Date();
+    const updatedApplication = await this.prisma.sellerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: ApplicationStatus.approved,
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+      },
+      include: { user: true, reviewedBy: true },
+    });
 
     // Update user role to SELLER
     await this.usersService.update(application.userId, {
-      role: UserRole.SELLER,
+      role: UserRole.seller,
     });
 
     // Create seller profile
@@ -98,8 +102,6 @@ export class SellerApplicationsService {
       application.storeName,
       application.storeDescription,
     );
-
-    const updatedApplication = await this.applicationsRepo.save(application);
 
     // TODO: Send approval email to user
 
@@ -113,16 +115,20 @@ export class SellerApplicationsService {
   ): Promise<SellerApplication> {
     const application = await this.findOne(applicationId);
 
-    if (application.status !== ApplicationStatus.PENDING) {
+    if (application.status !== ApplicationStatus.pending) {
       throw new BadRequestException('Only pending applications can be rejected');
     }
 
-    application.status = ApplicationStatus.REJECTED;
-    application.rejectionReason = rejectionReason;
-    application.reviewedById = adminId;
-    application.reviewedAt = new Date();
-
-    const updatedApplication = await this.applicationsRepo.save(application);
+    const updatedApplication = await this.prisma.sellerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: ApplicationStatus.rejected,
+        rejectionReason,
+        reviewedById: adminId,
+        reviewedAt: new Date(),
+      },
+      include: { user: true, reviewedBy: true },
+    });
 
     // TODO: Send rejection email to user with reason
 

@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { SellerProfilesController } from './seller-profiles.controller';
 import { SellerProfilesService } from './seller-profiles.service';
-import { UserRole } from '../users/user.entity';
+import { UserRole } from '@prisma/client';
 
 describe('SellerProfilesController', () => {
   let controller: SellerProfilesController;
@@ -18,7 +18,7 @@ describe('SellerProfilesController', () => {
   };
 
   const mockRequest = (userId: string) => ({
-    user: { userId, role: UserRole.SELLER },
+    user: { userId, role: UserRole.seller },
   });
 
   beforeEach(async () => {

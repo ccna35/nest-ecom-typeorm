@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserRole } from './user.entity';
+import { UserRole } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('users')
@@ -17,7 +17,7 @@ export class UsersController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   findAll() {
     return this.usersService.findAll();
   }
@@ -33,7 +33,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

@@ -7,7 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../user.entity';
+import { UserRole } from '@prisma/client';
 
 export class CreateUserDto {
   @IsEmail()

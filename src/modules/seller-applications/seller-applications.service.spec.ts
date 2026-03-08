@@ -1,26 +1,32 @@
 import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { SellerApplicationsService } from './seller-applications.service';
-import { SellerApplication, ApplicationStatus } from './seller-application.entity';
+import { SellerApplication, ApplicationStatus, User, UserRole } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { SellerProfilesService } from '../seller-profiles/seller-profiles.service';
-import { UserRole } from '../users/user.entity';
+import { PrismaService } from '../../database/prisma.service';
 
 describe('SellerApplicationsService', () => {
   let service: SellerApplicationsService;
-  let repository: jest.Mocked<Repository<SellerApplication>>;
+  let prismaService: {
+    sellerApplication: {
+      create: jest.Mock;
+      findUnique: jest.Mock;
+      findMany: jest.Mock;
+      update: jest.Mock;
+    };
+  };
   let usersService: jest.Mocked<UsersService>;
   let sellerProfilesService: jest.Mocked<SellerProfilesService>;
 
-  const mockUser = {
+  const mockUser: User = {
     id: 'u1',
     email: 'test@example.com',
     name: 'Test User',
-    role: UserRole.CUSTOMER,
+    role: UserRole.customer,
     isActive: true,
     passwordHash: 'hash',
+    avatarUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -30,28 +36,30 @@ describe('SellerApplicationsService', () => {
     userId: 'u1',
     storeName: 'Test Store',
     storeDescription: 'A test store description with more than 50 characters',
-    status: ApplicationStatus.PENDING,
+    status: ApplicationStatus.pending,
     rejectionReason: null,
     reviewedById: null,
-    reviewedBy: null,
     reviewedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    user: mockUser as any,
   };
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      sellerApplication: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+
     const module = await Test.createTestingModule({
       providers: [
         SellerApplicationsService,
         {
-          provide: getRepositoryToken(SellerApplication),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            findOne: jest.fn(),
-            find: jest.fn(),
-          },
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
         {
           provide: UsersService,
@@ -71,18 +79,17 @@ describe('SellerApplicationsService', () => {
     }).compile();
 
     service = module.get(SellerApplicationsService);
-    repository = module.get(getRepositoryToken(SellerApplication));
+    prismaService = module.get(PrismaService) as typeof prismaService;
     usersService = module.get(UsersService);
     sellerProfilesService = module.get(SellerProfilesService);
   });
 
   describe('create', () => {
     it('should create a seller application', async () => {
-      usersService.findOne.mockResolvedValue(mockUser as any);
-      repository.findOne.mockResolvedValue(null);
+      usersService.findOne.mockResolvedValue(mockUser);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(null);
       sellerProfilesService.findByUserId.mockResolvedValue(null);
-      repository.create.mockReturnValue(mockApplication);
-      repository.save.mockResolvedValue(mockApplication);
+      prismaService.sellerApplication.create.mockResolvedValue(mockApplication);
 
       const result = await service.create('u1', {
         storeName: 'Test Store',
@@ -90,16 +97,18 @@ describe('SellerApplicationsService', () => {
       });
 
       expect(result).toEqual(mockApplication);
-      expect(repository.create).toHaveBeenCalledWith({
-        userId: 'u1',
-        storeName: 'Test Store',
-        storeDescription: 'A test store description with more than 50 characters',
-        status: ApplicationStatus.PENDING,
+      expect(prismaService.sellerApplication.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'u1',
+          storeName: 'Test Store',
+          storeDescription: 'A test store description with more than 50 characters',
+          status: ApplicationStatus.pending,
+        },
       });
     });
 
     it('should throw BadRequestException if user is not a customer', async () => {
-      usersService.findOne.mockResolvedValue({ ...mockUser, role: UserRole.SELLER } as any);
+      usersService.findOne.mockResolvedValue({ ...mockUser, role: UserRole.seller });
 
       await expect(
         service.create('u1', {
@@ -110,8 +119,8 @@ describe('SellerApplicationsService', () => {
     });
 
     it('should throw BadRequestException if application already exists', async () => {
-      usersService.findOne.mockResolvedValue(mockUser as any);
-      repository.findOne.mockResolvedValue(mockApplication);
+      usersService.findOne.mockResolvedValue(mockUser);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(mockApplication);
 
       await expect(
         service.create('u1', {
@@ -122,9 +131,9 @@ describe('SellerApplicationsService', () => {
     });
 
     it('should throw BadRequestException if seller profile already exists', async () => {
-      usersService.findOne.mockResolvedValue(mockUser as any);
-      repository.findOne.mockResolvedValue(null);
-      sellerProfilesService.findByUserId.mockResolvedValue({} as any);
+      usersService.findOne.mockResolvedValue(mockUser);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(null);
+      sellerProfilesService.findByUserId.mockResolvedValue({} as never);
 
       await expect(
         service.create('u1', {
@@ -137,34 +146,33 @@ describe('SellerApplicationsService', () => {
 
   describe('findAll', () => {
     it('should return all applications', async () => {
-      repository.find.mockResolvedValue([mockApplication]);
+      prismaService.sellerApplication.findMany.mockResolvedValue([mockApplication]);
 
       const result = await service.findAll();
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: {},
-        relations: ['user', 'reviewedBy'],
-        order: { createdAt: 'DESC' },
+      expect(prismaService.sellerApplication.findMany).toHaveBeenCalledWith({
+        include: { user: true, reviewedBy: true },
+        orderBy: { createdAt: 'desc' },
       });
       expect(result).toEqual([mockApplication]);
     });
 
     it('should filter by status if provided', async () => {
-      repository.find.mockResolvedValue([mockApplication]);
+      prismaService.sellerApplication.findMany.mockResolvedValue([mockApplication]);
 
-      await service.findAll(ApplicationStatus.PENDING);
+      await service.findAll(ApplicationStatus.pending);
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { status: ApplicationStatus.PENDING },
-        relations: ['user', 'reviewedBy'],
-        order: { createdAt: 'DESC' },
+      expect(prismaService.sellerApplication.findMany).toHaveBeenCalledWith({
+        where: { status: ApplicationStatus.pending },
+        include: { user: true, reviewedBy: true },
+        orderBy: { createdAt: 'desc' },
       });
     });
   });
 
   describe('findOne', () => {
     it('should return application by id', async () => {
-      repository.findOne.mockResolvedValue(mockApplication);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(mockApplication);
 
       const result = await service.findOne('a1');
 
@@ -172,7 +180,7 @@ describe('SellerApplicationsService', () => {
     });
 
     it('should throw NotFoundException if not found', async () => {
-      repository.findOne.mockResolvedValue(null);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(null);
 
       await expect(service.findOne('a2')).rejects.toThrow(NotFoundException);
     });
@@ -182,30 +190,30 @@ describe('SellerApplicationsService', () => {
     it('should approve application and create seller profile', async () => {
       const approvedApplication = {
         ...mockApplication,
-        status: ApplicationStatus.APPROVED,
+        status: ApplicationStatus.approved,
         reviewedById: 'admin1',
-        reviewedAt: expect.any(Date),
+        reviewedAt: expect.any(Date) as Date,
       };
-      repository.findOne.mockResolvedValue(mockApplication);
-      repository.save.mockResolvedValue(approvedApplication);
-      usersService.update.mockResolvedValue({} as any);
-      sellerProfilesService.create.mockResolvedValue({} as any);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(mockApplication);
+      prismaService.sellerApplication.update.mockResolvedValue(approvedApplication);
+      usersService.update.mockResolvedValue({} as never);
+      sellerProfilesService.create.mockResolvedValue({} as never);
 
       const result = await service.approve('a1', 'admin1');
 
-      expect(usersService.update).toHaveBeenCalledWith('u1', { role: UserRole.SELLER });
+      expect(usersService.update).toHaveBeenCalledWith('u1', { role: UserRole.seller });
       expect(sellerProfilesService.create).toHaveBeenCalledWith(
         'u1',
         'Test Store',
         'A test store description with more than 50 characters',
       );
-      expect(result.status).toBe(ApplicationStatus.APPROVED);
+      expect(result.status).toBe(ApplicationStatus.approved);
     });
 
     it('should throw BadRequestException if application is not pending', async () => {
-      repository.findOne.mockResolvedValue({
+      prismaService.sellerApplication.findUnique.mockResolvedValue({
         ...mockApplication,
-        status: ApplicationStatus.APPROVED,
+        status: ApplicationStatus.approved,
       });
 
       await expect(service.approve('a1', 'admin1')).rejects.toThrow(BadRequestException);
@@ -214,27 +222,27 @@ describe('SellerApplicationsService', () => {
 
   describe('reject', () => {
     it('should reject application with reason', async () => {
-      const pendingApplication = { ...mockApplication, status: ApplicationStatus.PENDING };
+      const pendingApplication = { ...mockApplication, status: ApplicationStatus.pending };
       const rejectedApplication = {
         ...mockApplication,
-        status: ApplicationStatus.REJECTED,
+        status: ApplicationStatus.rejected,
         rejectionReason: 'Not enough information',
         reviewedById: 'admin1',
-        reviewedAt: expect.any(Date),
+        reviewedAt: expect.any(Date) as Date,
       };
-      repository.findOne.mockResolvedValue(pendingApplication);
-      repository.save.mockResolvedValue(rejectedApplication);
+      prismaService.sellerApplication.findUnique.mockResolvedValue(pendingApplication);
+      prismaService.sellerApplication.update.mockResolvedValue(rejectedApplication);
 
       const result = await service.reject('a1', 'admin1', 'Not enough information');
 
-      expect(result.status).toBe(ApplicationStatus.REJECTED);
+      expect(result.status).toBe(ApplicationStatus.rejected);
       expect(result.rejectionReason).toBe('Not enough information');
     });
 
     it('should throw BadRequestException if application is not pending', async () => {
-      repository.findOne.mockResolvedValue({
+      prismaService.sellerApplication.findUnique.mockResolvedValue({
         ...mockApplication,
-        status: ApplicationStatus.REJECTED,
+        status: ApplicationStatus.rejected,
       });
 
       await expect(service.reject('a1', 'admin1', 'reason')).rejects.toThrow(BadRequestException);
